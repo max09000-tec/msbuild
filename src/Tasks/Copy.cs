@@ -285,9 +285,40 @@ namespace Microsoft.Build.Tasks
                 MakeFileWriteable(destinationFileState, true);
             }
 
-            if (ChangeWaves.AreFeaturesEnabled(ChangeWaves.Wave17_8) && destinationFileState.FileExists && !destinationFileState.IsReadOnly)
+            if (ChangeWaves.AreFeaturesEnabled(ChangeWaves.Wave17_8) &&
+                destinationFileState.FileExists &&
+                !destinationFileState.IsReadOnly)
             {
-                FileUtilities.DeleteNoThrow(destinationFileState.Name);
+                try
+                {
+                    if (NativeMethodsShared.IsLinux)
+                    {
+                        Log.LogMessage($"Run lsof before DeleteNoThrow: {destinationFileState.Name}");
+                        RunLsof();
+                    }
+
+                    Log.LogMessage($"Try to delete with no throw: {destinationFileState.Name}");
+                    FileUtilities.DeleteNoThrow(destinationFileState.Name);
+                }
+                catch (Exception ex) when (ExceptionHandling.IsIoRelatedException(ex))
+                {
+                    Log.LogErrorFromException(ex, showStackTrace: true, showDetail: true, destinationFileState.Name);
+                    if (NativeMethodsShared.IsLinux)
+                    {
+                        Log.LogMessage($"Run lsof before DeleteNoThrow with IsIoRelatedException condition: {destinationFileState.Name}");
+                        RunLsof();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (NativeMethodsShared.IsLinux)
+                    {
+                        Log.LogMessage($"Run lsof after failed DeleteNoThrow: {destinationFileState.Name}");
+                        RunLsof();
+                    }
+
+                    Log.LogErrorFromException(ex, showStackTrace: true, showDetail: true, destinationFileState.Name);
+                }
             }
 
             bool symbolicLinkCreated = false;
@@ -356,6 +387,42 @@ namespace Microsoft.Build.Tasks
             WroteAtLeastOneFile = true;
 
             return true;
+        }
+
+        private void RunLsof()
+        {
+            try
+            {
+                using (Process process = new Process())
+                {
+                    process.StartInfo.FileName = "lsof";
+
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
+
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+
+                    process.WaitForExit();
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        Log.LogMessage($"lsof output:\n{output}");
+                    }
+
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        Log.LogError($"lsof error:\n{error}");
+                    }
+                }
+            }
+            catch
+            {
+                Log.LogWarning("lsof invocation has failed.");
+            }
         }
 
         private void TryCopyViaLink(string linkComment, MessageImportance messageImportance, FileState sourceFileState, FileState destinationFileState, out bool linkCreated, ref string errorMessage, Func<string, string, string, bool> createLink)
