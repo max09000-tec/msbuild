@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -11,7 +11,7 @@ using Microsoft.Build.BackEnd.Logging;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.FileAccesses;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Framework.FileAccess;
+using Microsoft.Build.Experimental.FileAccess;
 using Microsoft.Build.Internal;
 using Microsoft.Build.Shared;
 
@@ -436,7 +436,7 @@ namespace Microsoft.Build.BackEnd
         private void HandleTaskHostTaskComplete(TaskHostTaskComplete taskHostTaskComplete)
         {
 #if FEATURE_REPORTFILEACCESSES
-            if (taskHostTaskComplete.FileAccessData.Count > 0)
+            if (taskHostTaskComplete.FileAccessData?.Count > 0)
             {
                 IFileAccessManager fileAccessManager = ((IFileAccessManager)_buildComponentHost.GetComponent(BuildComponentType.FileAccessManager));
                 foreach (FileAccessData fileAccessData in taskHostTaskComplete.FileAccessData)
