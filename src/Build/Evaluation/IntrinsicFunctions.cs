@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -36,6 +37,13 @@ namespace Microsoft.Build.Evaluation
         private static readonly Lazy<Regex> RegistrySdkRegex = new Lazy<Regex>(() => new Regex(@"^HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Microsoft SDKs\\Windows\\v(\d+\.\d+)$", RegexOptions.IgnoreCase));
 
         private static readonly Lazy<NuGetFrameworkWrapper> NuGetFramework = new Lazy<NuGetFrameworkWrapper>(() => NuGetFrameworkWrapper.CreateInstance());
+
+#if FEATURE_ASSEMBLYLOADCONTEXT
+        /// <summary>
+        /// AssemblyContextLoader used to load DLLs outside of msbuild.exe directory.
+        /// </summary>
+        private static readonly CoreClrAssemblyLoader s_coreClrAssemblyLoader = new CoreClrAssemblyLoader();
+#endif
 
         /// <summary>
         /// Add two doubles
@@ -564,7 +572,7 @@ namespace Microsoft.Build.Evaluation
             return NuGetFramework.Value.GetTargetPlatformVersion(tfm, versionPartCount);
         }
 
-        internal static string FilterTargetFrameworks(string incoming, string filter)
+        internal static string FilterTargetFrameworks(string incoming, string filter) 
         {
             return NuGetFramework.Value.FilterTargetFrameworks(incoming, filter);
         }
@@ -577,6 +585,50 @@ namespace Microsoft.Build.Evaluation
         internal static string CheckFeatureAvailability(string featureName)
         {
             return Features.CheckFeatureAvailability(featureName).ToString();
+        }
+
+        internal static bool RegisterAnalyzer(string pathToAssembly)
+        {
+            pathToAssembly = FileUtilities.GetFullPathNoThrow(pathToAssembly);
+
+            try
+            {
+                // understand how to work with MSBuildLoadContext
+                if (File.Exists(pathToAssembly))
+                {
+                    Assembly assembly = null;
+#if FEATURE_ASSEMBLYLOADCONTEXT
+                    Console.WriteLine($"Hi from FEATURE_ASSEMBLYLOADCONTEXT.");
+                    assembly = s_coreClrAssemblyLoader.LoadFromPath(pathToAssembly);
+#else
+                    assembly = Assembly.LoadFrom(pathToAssembly);
+#endif
+                    Console.WriteLine($"Loaded assembly: {assembly.FullName}");
+
+                    Type type = assembly.GetTypes()[0];
+                    object instance = Activator.CreateInstance(type);
+
+                    PropertyInfo property = type.GetProperty("Name");
+                    var value = property.GetValue(instance);
+                    Console.WriteLine($"Loaded property analyzer name: {value}");
+
+                    return true;
+                }
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                Console.WriteLine("Failed to load one or more types from the assembly:");
+                foreach (Exception loaderException in ex.LoaderExceptions)
+                {
+                    Console.WriteLine(loaderException.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load assembly '{pathToAssembly}': {ex.Message}");
+            }
+
+            return false;
         }
 
         public static string GetCurrentToolsDirectory()
