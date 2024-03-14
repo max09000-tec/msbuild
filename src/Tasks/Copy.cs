@@ -331,9 +331,10 @@ namespace Microsoft.Build.Tasks
                 destinationFileExists = destinationFileState.FileExists;
             }
 
-            // CreateHardLink and CreateSymbolicLink cannot overwrite an existing file or link
-            // so we need to delete the existing entry before we create the hard or symbolic link.
-            if (destinationFileExists)
+            if (ChangeWaves.AreFeaturesEnabled(ChangeWaves.Wave17_8) &&
+                Traits.Instance.EscapeHatches.CopyWithoutDelete != true &&
+                destinationFileState.FileExists &&
+                !destinationFileState.IsReadOnly)
             {
                 FileUtilities.DeleteNoThrow(destinationFileState.Name);
             }
