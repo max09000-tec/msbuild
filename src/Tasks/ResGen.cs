@@ -311,7 +311,6 @@ namespace Microsoft.Build.Tasks
                         {
                             provider?.Dispose();
                         }
-                        
                     }
                 }
 
