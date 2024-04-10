@@ -481,15 +481,10 @@ namespace Microsoft.Build.BackEnd
                 }
             }
 
-            using (var localReadPipe = new BufferedReadStream(_pipeServer))
-            {
-                RunReadLoop(
-                    localReadPipe,
-                    _pipeServer,
-                    localPacketQueue,
-                    localPacketAvailable,
-                    localTerminatePacketPump);
-            }
+            RunReadLoop(
+                new BufferedReadStream(_pipeServer),
+                _pipeServer,
+                localPacketQueue, localPacketAvailable, localTerminatePacketPump);
 
             CommunicationsUtilities.Trace("Ending read loop");
 
@@ -513,12 +508,8 @@ namespace Microsoft.Build.BackEnd
             }
         }
 
-        private void RunReadLoop(
-            Stream localReadPipe,
-            Stream localWritePipe,
-            ConcurrentQueue<INodePacket> localPacketQueue,
-            AutoResetEvent localPacketAvailable,
-            AutoResetEvent localTerminatePacketPump)
+        private void RunReadLoop(Stream localReadPipe, Stream localWritePipe,
+            ConcurrentQueue<INodePacket> localPacketQueue, AutoResetEvent localPacketAvailable, AutoResetEvent localTerminatePacketPump)
         {
             // Ordering of the wait handles is important.  The first signalled wait handle in the array
             // will be returned by WaitAny if multiple wait handles are signalled.  We prefer to have the
@@ -599,11 +590,9 @@ namespace Microsoft.Build.BackEnd
 
                             NodePacketType packetType = (NodePacketType)Enum.ToObject(typeof(NodePacketType), headerByte[0]);
 
-                            ITranslator translator = null;
                             try
                             {
-                                translator = BinaryTranslator.GetReadTranslator(localReadPipe, _sharedReadBuffer);
-                                _packetFactory.DeserializeAndRoutePacket(0, packetType, translator);
+                                _packetFactory.DeserializeAndRoutePacket(0, packetType, BinaryTranslator.GetReadTranslator(localReadPipe, _sharedReadBuffer));
                             }
                             catch (Exception e)
                             {
@@ -613,10 +602,6 @@ namespace Microsoft.Build.BackEnd
                                 ChangeLinkStatus(LinkStatus.Failed);
                                 exitLoop = true;
                                 break;
-                            }
-                            finally
-                            {
-                                translator?.Dispose();
                             }
 
 #if FEATURE_APM
@@ -630,7 +615,6 @@ namespace Microsoft.Build.BackEnd
 
                     case 1:
                     case 2:
-                        ITranslator writeTranslator = null;
                         try
                         {
                             // Write out all the queued packets.
@@ -640,7 +624,7 @@ namespace Microsoft.Build.BackEnd
                                 var packetStream = _packetStream;
                                 packetStream.SetLength(0);
 
-                                writeTranslator = BinaryTranslator.GetWriteTranslator(packetStream);
+                                ITranslator writeTranslator = BinaryTranslator.GetWriteTranslator(packetStream);
 
                                 packetStream.WriteByte((byte)packet.Type);
 
@@ -667,10 +651,6 @@ namespace Microsoft.Build.BackEnd
                             ChangeLinkStatus(LinkStatus.Failed);
                             exitLoop = true;
                             break;
-                        }
-                        finally
-                        {
-                            writeTranslator?.Dispose();
                         }
 
                         if (waitId == 2)
