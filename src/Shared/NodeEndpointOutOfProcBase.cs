@@ -599,9 +599,11 @@ namespace Microsoft.Build.BackEnd
 
                             NodePacketType packetType = (NodePacketType)Enum.ToObject(typeof(NodePacketType), headerByte[0]);
 
+                            ITranslator translator = null;
                             try
                             {
-                                _packetFactory.DeserializeAndRoutePacket(0, packetType, BinaryTranslator.GetReadTranslator(localReadPipe, _sharedReadBuffer));
+                                translator = BinaryTranslator.GetReadTranslator(localReadPipe, _sharedReadBuffer);
+                                _packetFactory.DeserializeAndRoutePacket(0, packetType, translator);
                             }
                             catch (Exception e)
                             {
@@ -611,6 +613,10 @@ namespace Microsoft.Build.BackEnd
                                 ChangeLinkStatus(LinkStatus.Failed);
                                 exitLoop = true;
                                 break;
+                            }
+                            finally
+                            {
+                                translator?.Dispose();
                             }
 
 #if FEATURE_APM
@@ -624,6 +630,7 @@ namespace Microsoft.Build.BackEnd
 
                     case 1:
                     case 2:
+                        ITranslator writeTranslator = null;
                         try
                         {
                             // Write out all the queued packets.
@@ -633,7 +640,7 @@ namespace Microsoft.Build.BackEnd
                                 var packetStream = _packetStream;
                                 packetStream.SetLength(0);
 
-                                ITranslator writeTranslator = BinaryTranslator.GetWriteTranslator(packetStream);
+                                writeTranslator = BinaryTranslator.GetWriteTranslator(packetStream);
 
                                 packetStream.WriteByte((byte)packet.Type);
 
@@ -660,6 +667,10 @@ namespace Microsoft.Build.BackEnd
                             ChangeLinkStatus(LinkStatus.Failed);
                             exitLoop = true;
                             break;
+                        }
+                        finally
+                        {
+                            writeTranslator?.Dispose();
                         }
 
                         if (waitId == 2)
