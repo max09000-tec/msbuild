@@ -2768,15 +2768,26 @@ namespace Microsoft.Build.Execution
                 }
             }
 
-            XmlReaderSettings xrs = new XmlReaderSettings();
-            xrs.DtdProcessing = DtdProcessing.Ignore;
+            XmlReaderSettings xrs = new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Ignore
+            };
 
-            using var stringReader = new StringReader(wrapperProjectXml);
-            using var xmlReader = XmlReader.Create(stringReader, xrs);
-            ProjectRootElement projectRootElement = new ProjectRootElement(xmlReader, projectRootElementCache, isExplicitlyLoaded, preserveFormatting: false);
-            projectRootElement.DirectoryPath = Path.GetDirectoryName(projectFile);
-            ProjectInstance instance = new ProjectInstance(projectRootElement, globalProperties, toolsVersion, buildParameters, loggingService, projectBuildEventContext, sdkResolverService, submissionId);
-            return new ProjectInstance[] { instance };
+            StringReader sr = new StringReader(wrapperProjectXml);
+            using (XmlReader xmlReader = XmlReader.Create(sr, xrs))
+            {
+                ProjectRootElement projectRootElement = new(
+                    xmlReader,
+                    projectRootElementCache,
+                    isExplicitlyLoaded,
+                    preserveFormatting: false)
+                {
+                    DirectoryPath = Path.GetDirectoryName(projectFile)
+                };
+                ProjectInstance instance = new(projectRootElement, globalProperties, toolsVersion, buildParameters, loggingService, projectBuildEventContext, sdkResolverService, submissionId);
+
+                return new[] { instance };
+            }
         }
 
         /// <summary>

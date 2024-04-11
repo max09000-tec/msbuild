@@ -60,6 +60,7 @@ namespace Microsoft.Build.Logging
         {
             if (stream.TryGetLength(out long length))
             {
+                // check with Jan
                 using BinaryReader reader = new(stream);
 
                 return reader.ReadBytes((int)length);
@@ -67,7 +68,6 @@ namespace Microsoft.Build.Logging
 
             using var ms = new MemoryStream();
             stream.CopyTo(ms);
-
             return ms.ToArray();
         }
 

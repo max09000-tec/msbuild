@@ -196,6 +196,7 @@ namespace Microsoft.Build.BuildEngine
                     // This may throw - and that's fine as the user will receive a controlled version
                     // of that error.
                     RegistryView view = (RegistryView)Enum.Parse(typeof(RegistryView), viewAsString, true);
+
                     RegistryKey key = null;
                     try
                     {

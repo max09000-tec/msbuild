@@ -225,7 +225,7 @@ namespace Microsoft.Build.Tasks.Deployment.Bootstrapper
                     var fi = new FileInfo(de.Value);
                     using (FileStream fs = fi.OpenRead())
                     {
-                        using StreamReader sr = new StreamReader(fs);
+                        using var sr = new StreamReader(fs);
                         data = sr.ReadToEnd();
                     }
 
@@ -2034,9 +2034,8 @@ namespace Microsoft.Build.Tasks.Deployment.Bootstrapper
                     {
                         xmlwriter.Formatting = Formatting.Indented;
                         xmlwriter.Indentation = 4;
-
-                        using var xmlNodeReader = new XmlNodeReader(node);
-                        xmlwriter.WriteNode(xmlNodeReader, true);
+                        using var xmlReader = new XmlNodeReader(node);
+                        xmlwriter.WriteNode(xmlReader, true);
                     }
                 }
                 catch (IOException)
@@ -2199,7 +2198,6 @@ namespace Microsoft.Build.Tasks.Deployment.Bootstrapper
                 {
                     using var cert = new X509Certificate(fileSource);
                     string publicKey = cert.GetPublicKeyString();
-
                     return publicKey;
                 }
                 catch (System.Security.Cryptography.CryptographicException)

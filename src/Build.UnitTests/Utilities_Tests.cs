@@ -310,9 +310,11 @@ namespace Microsoft.Build.UnitTests
         [Fact]
         public void CreateToolsVersionString()
         {
+            using var pc1 = new ProjectCollection();
+            using var pc2 = new ProjectCollection();
             List<Toolset> toolsets = new List<Toolset>();
-            toolsets.Add(new Toolset("66", "x", new ProjectCollection(), null));
-            toolsets.Add(new Toolset("44", "y", new ProjectCollection(), null));
+            toolsets.Add(new Toolset("66", "x", pc1, null));
+            toolsets.Add(new Toolset("44", "y", pc2, null));
 
             string result = InternalUtilities.CreateToolsVersionListString(toolsets);
 

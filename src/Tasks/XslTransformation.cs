@@ -452,11 +452,11 @@ namespace Microsoft.Build.Tasks
                 {
                     case XslModes.Xslt:
                         {
-                            using var xmlReader = XmlReader.Create(new StringReader(_data));
+                            using var sr = new StringReader(_data);
+                            using var xmlReader = XmlReader.Create(sr);
                             xslct.Load(xmlReader, settings, new XmlUrlResolver());
                             break;
-                        }
-
+                        }         
                     case XslModes.XsltFile:
                         if (useTrustedSettings)
                         {

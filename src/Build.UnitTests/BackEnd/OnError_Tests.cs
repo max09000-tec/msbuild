@@ -618,8 +618,8 @@ namespace Microsoft.Build.UnitTests.BackEnd
         public void PostBuildOnSuccessWhereCompileFailed()
         {
             MockLogger l = new MockLogger();
-            Project p = new Project(
-                XmlReader.Create(new StringReader(PostBuildBuilder("On_Success", FailAt.Compile))));
+            using var xmlReader = XmlReader.Create(new StringReader(PostBuildBuilder("On_Success", FailAt.Compile)));
+            Project p = new Project(xmlReader);
 
             p.Build(new string[] { "Build" }, new ILogger[] { l });
 
@@ -710,8 +710,8 @@ namespace Microsoft.Build.UnitTests.BackEnd
         public void PostBuildFinalOutputChangedWhereGenerateSatellitesFailed()
         {
             MockLogger l = new MockLogger();
-            Project p = new Project(
-                XmlReader.Create(new StringReader(PostBuildBuilder("Final_Output_Changed", FailAt.GenerateSatellites))));
+            using var xmlReader = XmlReader.Create(new StringReader(PostBuildBuilder("Final_Output_Changed", FailAt.GenerateSatellites)));
+            Project p = new Project(xmlReader);
 
             p.Build(new string[] { "Build" }, new ILogger[] { l });
 

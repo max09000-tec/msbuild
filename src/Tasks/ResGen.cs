@@ -293,6 +293,7 @@ namespace Microsoft.Build.Tasks
                         try
                         {
                             provider = CodeDomProvider.CreateProvider(StronglyTypedLanguage);
+                            StronglyTypedFileName = ProcessResourceFiles.GenerateDefaultStronglyTypedFilename(provider, outputFile.ItemSpec);
                         }
                         catch (System.Configuration.ConfigurationException)
                         {
@@ -310,8 +311,6 @@ namespace Microsoft.Build.Tasks
                         {
                             provider?.Dispose();
                         }
-
-                        StronglyTypedFileName = ProcessResourceFiles.GenerateDefaultStronglyTypedFilename(provider, outputFile.ItemSpec);
                     }
                 }
 

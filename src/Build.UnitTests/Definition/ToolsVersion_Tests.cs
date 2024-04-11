@@ -884,11 +884,12 @@ namespace Microsoft.Build.UnitTests.Definition
         [Fact]
         public void InlineTasksInDotTasksFile()
         {
+            using var pc = new ProjectCollection();
             Toolset t = new Toolset(
                 "t",
                 NativeMethodsShared.IsWindows ? "c:\\inline" : "/inline",
                 new PropertyDictionary<ProjectPropertyInstance>(),
-                new ProjectCollection(),
+                pc,
                 new DirectoryGetFiles(this.getFiles),
                 new LoadXmlFromPath(this.loadXmlFromPath),
                 null,

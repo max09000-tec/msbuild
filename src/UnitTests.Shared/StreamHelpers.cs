@@ -53,7 +53,7 @@ namespace Microsoft.Build.UnitTests
          */
         public static Stream StringToStream(string value, System.Text.Encoding encoding)
         {
-            using MemoryStream m = new MemoryStream();
+            MemoryStream m = new MemoryStream();
             using TextWriter w = new StreamWriter(m, encoding); // HIGHCHAR: StringToStream helper accepts encoding from caller.
 
             w.Write(value);

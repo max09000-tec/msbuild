@@ -101,7 +101,6 @@ namespace Microsoft.Build.Tasks
 
             FileStream stream = null;
             ZipArchive zipArchive = null;
-
             try
             {
                 ParseIncludeExclude();

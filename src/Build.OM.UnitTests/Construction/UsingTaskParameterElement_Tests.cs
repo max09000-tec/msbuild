@@ -224,8 +224,7 @@ namespace Microsoft.Build.UnitTests.OM.Construction
         /// </summary>
         private static ProjectUsingTaskParameterElement GetParameterXml(string contents)
         {
-            using var stringReader = new StringReader(contents);
-            using var xmlReader = XmlReader.Create(stringReader);
+            using var xmlReader = XmlReader.Create(new StringReader(contents));
             ProjectRootElement project = ProjectRootElement.Create(xmlReader);
             ProjectUsingTaskElement usingTask = (ProjectUsingTaskElement)Helpers.GetFirst(project.Children);
             UsingTaskParameterGroupElement parameterGroup = usingTask.ParameterGroup;

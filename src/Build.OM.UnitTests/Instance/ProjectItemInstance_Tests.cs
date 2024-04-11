@@ -1167,8 +1167,7 @@ namespace Microsoft.Build.UnitTests.OM.Instance
         /// </summary>
         private static IList<ProjectItemInstance> GetItems(string content)
         {
-            using var stringReader = new StringReader(content);
-            using var xmlReader = XmlReader.Create(stringReader);
+            using var xmlReader = XmlReader.Create(new StringReader(content));
             ProjectRootElement xml = ProjectRootElement.Create(xmlReader);
             ProjectInstance project = new ProjectInstance(xml);
 

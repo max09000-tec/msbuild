@@ -1622,10 +1622,9 @@ namespace Microsoft.Build.Tasks
         private void GetStronglyTypedResourceToProcess(ref List<ITaskItem> inputsToProcess, ref List<ITaskItem> outputsToProcess)
         {
             bool needToRebuildSTR = false;
-
-            // The resource file isn't out of date. So check whether the STR class file is.
             CodeDomProvider provider = null;
 
+            // The resource file isn't out of date. So check whether the STR class file is.
             try
             {
                 if (StronglyTypedFileName == null)
@@ -2162,7 +2161,10 @@ namespace Microsoft.Build.Tasks
                     {
                         if (ProcessResourceFiles.TryCreateCodeDomProvider(Log, StronglyTypedLanguage, out provider))
                         {
-                            StronglyTypedFileName = ProcessResourceFiles.GenerateDefaultStronglyTypedFilename(provider, OutputResources[0].ItemSpec);
+                            StronglyTypedFileName = ProcessResourceFiles.GenerateDefaultStronglyTypedFilename(
+                                provider, OutputResources[0].ItemSpec);
+
+                            provider.Dispose();
                         }
                     }
                     finally
@@ -3567,8 +3569,8 @@ namespace Microsoft.Build.Tasks
         {
             // Check for byte order marks in the beginning of the input file, but
             // default to UTF-8.
-            using FileStream fileStream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using (LineNumberStreamReader sr = new LineNumberStreamReader(fileStream, new UTF8Encoding(true), true))
+            using var fs = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using (LineNumberStreamReader sr = new LineNumberStreamReader(fs, new UTF8Encoding(true), true))
             {
                 StringBuilder name = new StringBuilder(255);
                 StringBuilder value = new StringBuilder(2048);

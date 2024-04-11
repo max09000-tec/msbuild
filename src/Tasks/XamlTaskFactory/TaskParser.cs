@@ -144,9 +144,9 @@ namespace Microsoft.Build.Tasks.Xaml
                     throw new ArgumentException(ResourceUtilities.FormatResourceStringStripCodeAndKeyword("Xaml.RuleFileNotFound", contentOrFile));
                 }
 
-                using var stringReader = new StreamReader(contentOrFile);
+                using var sr = new StreamReader(contentOrFile);
 
-                return ParseXamlDocument(stringReader, desiredRule);
+                return ParseXamlDocument(sr, desiredRule);
             }
 
             // On Windows, xml content string is not a valid path, so, maybeFullPath == null
@@ -160,9 +160,9 @@ namespace Microsoft.Build.Tasks.Xaml
             if (FileSystems.Default.FileExists(maybeFullPath))
             {
                 // file found, parse as a file
-                using var stringReader = new StreamReader(maybeFullPath);
+                using var sr = new StreamReader(maybeFullPath);
 
-                return ParseXamlDocument(stringReader, desiredRule);
+                return ParseXamlDocument(sr, desiredRule);
             }
 
             // @maybeFullPath is either:

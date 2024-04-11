@@ -121,12 +121,12 @@ namespace Microsoft.Build.UnitTests
         public static void AssertItemEvaluationFromProject(string projectContents, string[] inputFiles, string[] expectedInclude, Dictionary<string, string>[] expectedMetadataPerItem = null, bool normalizeSlashes = false, bool makeExpectedIncludeAbsolute = false)
         {
             AssertItemEvaluationFromGenericItemEvaluator((p, c) =>
-            {
-                return new Project(p, new Dictionary<string, string>(), MSBuildConstants.CurrentToolsVersion, c)
-                    .Items
-                    .Select(i => (ITestItem)new ProjectItemTestItemAdapter(i))
-                    .ToList();
-            },
+                {
+                    return new Project(p, new Dictionary<string, string>(), MSBuildConstants.CurrentToolsVersion, c)
+                        .Items
+                        .Select(i => (ITestItem)new ProjectItemTestItemAdapter(i))
+                        .ToList();
+                },
             projectContents,
             inputFiles,
             expectedInclude,
@@ -661,10 +661,12 @@ namespace Microsoft.Build.UnitTests
         public static ProjectRootElement CreateInMemoryProjectRootElement(string projectContents, ProjectCollection collection = null, bool preserveFormatting = true)
         {
             var cleanedProject = CleanupFileContents(projectContents);
-
+            using var pc = new ProjectCollection();
+            using var xmlReader = XmlReader.Create(new StringReader(cleanedProject));
+      
             return ProjectRootElement.Create(
-                XmlReader.Create(new StringReader(cleanedProject)),
-                collection ?? new ProjectCollection(),
+                xmlReader,
+                collection ?? pc,
                 preserveFormatting);
         }
 
@@ -686,7 +688,8 @@ namespace Microsoft.Build.UnitTests
         /// <returns>Returns created <see cref="Project"/>.</returns>
         public static Project CreateInMemoryProject(string xml, params ILogger[] loggers)
         {
-            return CreateInMemoryProject(new ProjectCollection(), xml, loggers);
+            using var pc = new ProjectCollection();
+            return CreateInMemoryProject(pc, xml, loggers);
         }
 
         /// <summary>
@@ -724,8 +727,7 @@ namespace Microsoft.Build.UnitTests
                 }
             }
 
-            using var stringReader = new StringReader(CleanupFileContents(xml));
-            using var xmlReader = XmlReader.Create(stringReader, readerSettings);
+            using var xmlReader = XmlReader.Create(new StringReader(CleanupFileContents(xml)));
             Project project = new Project(
                 xmlReader,
                 globalProperties: null,
@@ -767,7 +769,7 @@ namespace Microsoft.Build.UnitTests
             string projectContents,
             params ILogger[] loggers)
         {
-            ProjectCollection collection = new();
+            using ProjectCollection collection = new();
             Project project = CreateInMemoryProject(collection, projectContents, loggers);
             project.Build().ShouldBeTrue();
         }
@@ -795,7 +797,7 @@ namespace Microsoft.Build.UnitTests
             string projectContents,
             params ILogger[] loggers)
         {
-            ProjectCollection collection = new();
+            using ProjectCollection collection = new();
             Project project = CreateInMemoryProject(collection, projectContents, loggers);
             project.Build().ShouldBeFalse("Build succeeded, but shouldn't have.  See test output (Attachments in Azure Pipelines) for details\"");
         }
@@ -978,8 +980,7 @@ namespace Microsoft.Build.UnitTests
         {
             string projectFileFullPath = Path.Combine(TempProjectDir, projectFileRelativePath);
 
-            ProjectCollection projectCollection = new ProjectCollection();
-
+            using ProjectCollection projectCollection = new ProjectCollection();
             Project project = new Project(projectFileFullPath, null, null, projectCollection);
 
             if (touchProject)
@@ -1093,7 +1094,8 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         public static IList<ProjectItem> GetItems(string content, bool allItems = false, bool ignoreCondition = false)
         {
-            var projectXml = ProjectRootElement.Create(XmlReader.Create(new StringReader(CleanupFileContents(content))));
+            using var xmlReader = XmlReader.Create(new StringReader(CleanupFileContents(content)));
+            var projectXml = ProjectRootElement.Create(xmlReader);
             Project project = new Project(projectXml);
             IList<ProjectItem> item = Helpers.MakeList(
                 ignoreCondition ?
@@ -1351,7 +1353,8 @@ namespace Microsoft.Build.UnitTests
             // Replace the nonstandard quotes with real ones
             content = ObjectModelHelpers.CleanupFileContents(content);
 
-            Project project = new Project(XmlReader.Create(new StringReader(content)), globalProperties, toolsVersion: null);
+            using var xmlReader = XmlReader.Create(new StringReader(content));
+            Project project = new Project(xmlReader, globalProperties, toolsVersion: null);
             logger ??= new MockLogger
             {
                 AllowTaskCrashes = allowTaskCrash
@@ -1366,7 +1369,8 @@ namespace Microsoft.Build.UnitTests
             // Replace the nonstandard quotes with real ones
             content = ObjectModelHelpers.CleanupFileContents(content);
 
-            Project project = new Project(XmlReader.Create(new StringReader(content)), null, toolsVersion: null);
+            using var xmlReader = XmlReader.Create(new StringReader(content));
+            Project project = new Project(xmlReader, null, toolsVersion: null);
 
             List<ILogger> loggers = new List<ILogger>() { binaryLogger };
 
@@ -1973,7 +1977,8 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         public static void ClearDirtyFlag(ProjectRootElement project)
         {
-            project.Save(new StringWriter());
+            using var sw = new StringWriter();
+            project.Save(sw);
             Assert.False(project.HasUnsavedChanges);
         }
 
