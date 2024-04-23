@@ -114,8 +114,10 @@ namespace Microsoft.Build.Tasks.Deployment.ManifestUtilities
                     }
                 }
 
+#pragma warning disable CA2000 // Dispose objects before losing scope - the caller expects to receive an open stream
                 var m = new MemoryStream();
-                using var w = new XmlTextWriter(m, Encoding.UTF8);
+                var w = new XmlTextWriter(m, Encoding.UTF8);
+#pragma warning restore CA2000 // Dispose objects before losing scope
                 w.WriteStartDocument();
 
                 int t5 = Environment.TickCount;
