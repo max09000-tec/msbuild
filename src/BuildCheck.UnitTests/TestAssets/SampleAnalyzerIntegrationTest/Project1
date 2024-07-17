@@ -11,6 +11,10 @@
        <TestProperty>Test</TestProperty>
    </PropertyGroup>
 
+    <PropertyGroup>
+        <OutputPath>C:\Users\ykovalova\Downloads\test</OutputPath>
+    </PropertyGroup>
+
 
    <Target Name="Hello">
        <Message Importance="High" Condition="$(Test2) == true" Text="XYZABC" />

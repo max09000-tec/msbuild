@@ -43,6 +43,12 @@ namespace Microsoft.Build.Framework
         /// </summary>
         public IEnumerable? Properties { get; set; }
 
+
+        /// <summary>
+        /// Final set of properties produced by this evaluation with location.
+        /// </summary>
+        public IEnumerable? PropertiesWithLocation { get; set; }
+
         /// <summary>
         /// Final set of items produced by this evaluation.
         /// </summary>

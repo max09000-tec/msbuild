@@ -9,6 +9,10 @@
     <PropertyGroup Condition="$(Test) == true">
         <TestProperty>Test</TestProperty>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <OutputPath>C:\Users\ykovalova\Downloads\test</OutputPath>
+    </PropertyGroup>
                     
     <ItemGroup>
         <Reference Include="bin/foo.dll" />

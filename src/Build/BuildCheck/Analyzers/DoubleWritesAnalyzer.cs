@@ -3,13 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.Build.Experimental.BuildCheck.Infrastructure;
-using Microsoft.Build.Construction;
-using Microsoft.Build.Experimental.BuildCheck;
 using static Microsoft.Build.Experimental.BuildCheck.TaskInvocationAnalysisData;
 
 #if FEATURE_MSIOREDIST

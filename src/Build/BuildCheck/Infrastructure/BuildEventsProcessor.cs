@@ -50,9 +50,8 @@ internal class BuildEventsProcessor(BuildCheckCentralContext buildCheckCentralCo
         IAnalysisContext analysisContext,
         ProjectEvaluationFinishedEventArgs evaluationFinishedEventArgs)
     {
-        Dictionary<string, string> propertiesLookup = new Dictionary<string, string>();
-        Internal.Utilities.EnumerateProperties(evaluationFinishedEventArgs.Properties, propertiesLookup,
-            static (dict, kvp) => dict.Add(kvp.Key, kvp.Value));
+        Dictionary<string, (string Value, string File, int Line, int Column)> propertiesLookup = new Dictionary<string, (string Value, string File, int Line, int Column)>();
+        Internal.Utilities.EnumeratePropertiesWithLocation(evaluationFinishedEventArgs.PropertiesWithLocation, propertiesLookup, static (dict, kvp) => dict.Add(kvp.Key, kvp.Value));
 
         EvaluatedPropertiesAnalysisData analysisData =
             new(evaluationFinishedEventArgs.ProjectFile!, propertiesLookup, _evaluatedEnvironmentVariables);

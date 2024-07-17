@@ -585,12 +585,12 @@ namespace Microsoft.Build.Shared
         /// <param name="value">When this method returns, the value associated with the specified key normalized as a path, if the key is found; otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the dictionary contains an element that has the specified key; otherwise, <see langword="false"/>.</returns>
         /// <remarks>Use this method to get paths from dictionaries of properties whose default values may contain backslashes.</remarks>
-        internal static bool TryGetPathValue<TKey>(this IReadOnlyDictionary<TKey, string> dictionary, TKey key, out string value)
+        internal static bool TryGetPathValue<TKey>(this IReadOnlyDictionary<TKey, (string Value, string File, int Line, int Column)> dictionary, TKey key, out (string Value, string File, int Line, int Column) value)
         {
             bool result = dictionary.TryGetValue(key, out value);
             if (result)
             {
-                value = NormalizePath(value);
+                value = (NormalizePath(value.Value), value.File, value.Line, value.Column);
             }
 
             return result;

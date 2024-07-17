@@ -669,6 +669,51 @@ namespace Microsoft.Build.Internal
             }
         }
 
+
+        public static void EnumeratePropertiesWithLocation<TArg>(
+            IEnumerable properties,
+            TArg arg,
+            Action<TArg, KeyValuePair<string, (string Value, string File, int Line, int Column)>> callback)
+        {
+            if (properties == null)
+            {
+                return;
+            }
+
+            foreach (var item in properties)
+            {
+                if (item is IProperty property && !string.IsNullOrEmpty(property.Name))
+                {
+                    callback(arg, new KeyValuePair<string, (string Value, string File, int Line, int Column)>(
+                        property.Name,
+                        (property.EvaluatedValue ?? string.Empty, property.Location.File ?? string.Empty, property.Location.Line, property.Location.Column)));
+                }
+                else if (item is DictionaryEntry dictionaryEntry && dictionaryEntry.Key is string key && !string.IsNullOrEmpty(key))
+                {
+                    // value represents property value, file name, line and column.
+                    if (dictionaryEntry.Value is ValueTuple<string, string, int, int> tuple)
+                    {
+                        callback(arg, new KeyValuePair<string, (string Value, string File, int Line, int Column)>(key, tuple));
+                    }
+                }
+                else if (item is KeyValuePair<string, (string Value, string File, int Line, int Column)> kvp)
+                {
+                    callback(arg, kvp);
+                }
+                else
+                {
+                    if (item == null)
+                    {
+                        Debug.Fail($"In {nameof(EnumerateProperties)}(): Unexpected: property is null");
+                    }
+                    else
+                    {
+                        Debug.Fail($"In {nameof(EnumerateProperties)}(): Unexpected property {item} of type {item?.GetType().ToString()}");
+                    }
+                }
+            }
+        }
+
         public static void EnumerateItems(IEnumerable items, Action<DictionaryEntry> callback)
         {
             if (items is ItemDictionary<ProjectItemInstance> projectItemInstanceDictionary)

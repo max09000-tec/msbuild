@@ -18,6 +18,7 @@ using Microsoft.Build.Collections;
 using Microsoft.Build.Framework.Profiler;
 using System.Collections;
 using System.Linq;
+
 #endif
 
 #if FEATURE_APPDOMAIN
@@ -990,6 +991,7 @@ namespace Microsoft.Build.Shared
 
             WriteProperties(args.GlobalProperties, translator);
             WriteProperties(args.Properties, translator);
+            WritePropertiesWithLocation(args.Properties, translator);
             WriteItems(args.Items, translator);
             WriteProfileResult(args.ProfilerResult, translator);
         }
@@ -1070,6 +1072,9 @@ namespace Microsoft.Build.Shared
         private static List<KeyValuePair<string, string>> reusablePropertyList;
 
         [ThreadStatic]
+        private static List<KeyValuePair<string, (string Value, string File, int Line, int Column)>> reusablePropertyListWithLocation;
+
+        [ThreadStatic]
         private static List<(string itemType, object item)> reusableItemList;
 
         private void WriteProperties(IEnumerable properties, ITranslator translator)
@@ -1097,6 +1102,39 @@ namespace Microsoft.Build.Shared
             {
                 writer.Write(item.Key);
                 writer.Write(item.Value);
+            }
+
+            list.Clear();
+        }
+
+        private void WritePropertiesWithLocation(IEnumerable properties, ITranslator translator)
+        {
+            var writer = translator.Writer;
+            if (properties == null)
+            {
+                writer.Write((byte)0);
+                return;
+            }
+
+            if (reusablePropertyListWithLocation == null)
+            {
+                reusablePropertyListWithLocation = new List<KeyValuePair<string, (string Value, string File, int Line, int Column)>>();
+            }
+
+            // it is expensive to access a ThreadStatic field every time
+            var list = reusablePropertyListWithLocation;
+
+            Internal.Utilities.EnumeratePropertiesWithLocation(properties, list, static (list, kvp) => list.Add(kvp));
+
+            BinaryWriterExtensions.Write7BitEncodedInt(writer, list.Count);
+
+            foreach (var item in list)
+            {
+                writer.Write(item.Key);
+                writer.Write(item.Value.Value);
+                writer.Write(item.Value.File);
+                writer.Write(item.Value.Line);
+                writer.Write(item.Value.Column);
             }
 
             list.Clear();
@@ -1369,8 +1407,7 @@ namespace Microsoft.Build.Shared
         {
             var (buildEventContext, timestamp, projectFile) = ReadEvaluationEvent(translator);
 
-            var args = new ProjectEvaluationFinishedEventArgs(
-                ResourceUtilities.GetResourceString("EvaluationFinished"), projectFile);
+            var args = new ProjectEvaluationFinishedEventArgs(ResourceUtilities.GetResourceString("EvaluationFinished"), projectFile);
 
             args.BuildEventContext = buildEventContext;
             args.RawTimestamp = timestamp;
@@ -1378,6 +1415,7 @@ namespace Microsoft.Build.Shared
 
             args.GlobalProperties = ReadProperties(translator);
             args.Properties = ReadProperties(translator);
+            args.PropertiesWithLocation = ReadPropertiesWithLocation(translator);
             args.Items = ReadItems(translator);
             args.ProfilerResult = ReadProfileResult(translator);
 
@@ -1419,6 +1457,31 @@ namespace Microsoft.Build.Shared
 
             return list;
         }
+
+        private IEnumerable ReadPropertiesWithLocation(ITranslator translator)
+        {
+            var reader = translator.Reader;
+            int count = BinaryReaderExtensions.Read7BitEncodedInt(reader);
+            if (count == 0)
+            {
+                return Enumerable.Empty<DictionaryEntry>();
+            }
+
+            var list = new ArrayList(count);
+            for (int i = 0; i < count; i++)
+            {
+                string key = reader.ReadString();
+                string value = reader.ReadString();
+                string file = reader.ReadString();
+                int line = reader.ReadInt32();
+                int column = reader.ReadInt32();
+                var entry = new DictionaryEntry(key, (value, file, line, column));
+                list.Add(entry);
+            }
+
+            return list;
+        }
+
 
         private IEnumerable ReadItems(ITranslator translator)
         {

@@ -13,7 +13,7 @@ public class EvaluatedPropertiesAnalysisData : AnalysisData
 {
     internal EvaluatedPropertiesAnalysisData(
         string projectFilePath,
-        IReadOnlyDictionary<string, string> evaluatedProperties,
+        IReadOnlyDictionary<string, (string Value, string File, int Line, int Column)> evaluatedProperties,
         IReadOnlyDictionary<string, (string EnvVarValue, string File, int Line, int Column)> evaluatedEnvironmentVariables)
         : base(projectFilePath)
     {
@@ -24,7 +24,7 @@ public class EvaluatedPropertiesAnalysisData : AnalysisData
     /// <summary>
     /// Gets the evaluated properties of the project.
     /// </summary>
-    public IReadOnlyDictionary<string, string> EvaluatedProperties { get; }
+    public IReadOnlyDictionary<string, (string Value, string File, int Line, int Column)> EvaluatedProperties { get; }
 
     /// <summary>
     /// Gets the evaluated environment variables and their metadata.

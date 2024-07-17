@@ -517,7 +517,7 @@ namespace Microsoft.Build.Collections
             {
                 foreach (var kvp in (ICollection<T>)_properties)
                 {
-                    keyValueCallback(kvp.Key, EscapingUtilities.UnescapeAll(kvp.EscapedValue));
+                    keyValueCallback(kvp.Key, (EscapingUtilities.UnescapeAll(kvp.EscapedValue)));
                 }
             }
         }

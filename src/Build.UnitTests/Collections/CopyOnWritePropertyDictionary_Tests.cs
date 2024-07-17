@@ -206,6 +206,12 @@ namespace Microsoft.Build.UnitTests.OM.Collections
 
             public string EscapedValue => Key;
 
+            public string File => string.Empty;
+
+            public int Column => 0;
+
+            public int Line => 0;
+
             public bool Equals(MockValue? other)
             {
                 return other != null && Key == other.Key;

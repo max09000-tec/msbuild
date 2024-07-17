@@ -3,12 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.Build.Experimental.BuildCheck.Infrastructure;
 using Microsoft.Build.Construction;
-using Microsoft.Build.Experimental.BuildCheck;
 using Microsoft.Build.Shared;
 
 namespace Microsoft.Build.Experimental.BuildCheck.Analyzers;
@@ -44,54 +41,56 @@ internal sealed class SharedOutputPathAnalyzer : BuildAnalyzer
             return;
         }
 
-        string? binPath, objPath;
-        context.Data.EvaluatedProperties.TryGetPathValue("OutputPath", out binPath);
-        context.Data.EvaluatedProperties.TryGetPathValue("IntermediateOutputPath", out objPath);
+        (string Value, string File, int Line, int Column) binMetadata;
+        (string Value, string File, int Line, int Column) objMetadata;
+        context.Data.EvaluatedProperties.TryGetPathValue("OutputPath", out binMetadata);
+        context.Data.EvaluatedProperties.TryGetPathValue("IntermediateOutputPath", out objMetadata);
 
-        string? absoluteBinPath = CheckAndAddFullOutputPath(binPath, context);
+        Debugger.Launch();
+        string? absoluteBinPath = CheckAndAddFullOutputPath(binMetadata, context);
         // Check objPath only if it is different from binPath
         if (
-            !string.IsNullOrEmpty(objPath) && !string.IsNullOrEmpty(absoluteBinPath) &&
-            !objPath.Equals(binPath, StringComparison.CurrentCultureIgnoreCase)
-            && !objPath.Equals(absoluteBinPath, StringComparison.CurrentCultureIgnoreCase)
+            !string.IsNullOrEmpty(objMetadata.Value) && !string.IsNullOrEmpty(absoluteBinPath) &&
+            !objMetadata.Value.Equals(binMetadata.Value, StringComparison.CurrentCultureIgnoreCase)
+            && !objMetadata.Value.Equals(absoluteBinPath, StringComparison.CurrentCultureIgnoreCase)
         )
         {
-            CheckAndAddFullOutputPath(objPath, context);
+            CheckAndAddFullOutputPath(objMetadata, context);
         }
     }
 
-    private string? CheckAndAddFullOutputPath(string? path, BuildCheckDataContext<EvaluatedPropertiesAnalysisData> context)
+    private string? CheckAndAddFullOutputPath((string Value, string File, int Line, int Column) metadata, BuildCheckDataContext<EvaluatedPropertiesAnalysisData> context)
     {
-        if (string.IsNullOrEmpty(path))
+        if (string.IsNullOrEmpty(metadata.Value))
         {
-            return path;
+            return metadata.Value;
         }
 
         string projectPath = context.Data.ProjectFilePath;
 
-        if (!Path.IsPathRooted(path))
+        if (!Path.IsPathRooted(metadata.Value))
         {
-            path = Path.Combine(Path.GetDirectoryName(projectPath)!, path);
+            metadata.Value = Path.Combine(Path.GetDirectoryName(projectPath)!, metadata.Value);
         }
 
         // Normalize the path to avoid false negatives due to different path representations.
-        path = Path.GetFullPath(path);
+        metadata.Value = Path.GetFullPath(metadata.Value);
 
-        if (_projectsPerOutputPath.TryGetValue(path!, out string? conflictingProject))
+        if (_projectsPerOutputPath.TryGetValue(metadata.Value!, out string? conflictingProject))
         {
             context.ReportResult(BuildCheckResult.Create(
                 SupportedRule,
                 // Populating precise location tracked via https://github.com/orgs/dotnet/projects/373/views/1?pane=issue&itemId=58661732
-                ElementLocation.EmptyLocation,
+                ElementLocation.Create(metadata.File, metadata.Line, metadata.Column),
                 Path.GetFileName(projectPath),
                 Path.GetFileName(conflictingProject),
-                path!));
+                metadata.Value!));
         }
         else
         {
-            _projectsPerOutputPath[path!] = projectPath;
+            _projectsPerOutputPath[metadata.Value!] = projectPath;
         }
 
-        return path;
+        return metadata.Value!;
     }
 }
